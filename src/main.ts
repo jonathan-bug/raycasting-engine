@@ -4,8 +4,8 @@ import Vector from './utils/Vector'
 const canvas = document.getElementById('canvas') as HTMLCanvasElement
 const context = canvas.getContext('2d')
 
-canvas.width = window.innerWidth
-canvas.height = window.innerHeight
+canvas.width = window.innerWidth / 2
+canvas.height = window.innerHeight / 2
 
 if (!context) {
     throw new Error('Error no context')
@@ -38,11 +38,22 @@ var grid: number[][] = [
     [2, 2, 2, 2, 2, 2, 2, 2]
 ]
 
+// Pool
+var rayOrientation: Vector = new Vector()
+var gridPosition: Vector = new Vector()
+var sideDist: Vector = new Vector()
+var delDist: Vector = new Vector()
+var step: Vector = new Vector()
+var style = {
+    r: 0,
+    g: 0,
+    b: 0
+}
+var initialX: number = 0
+
 // Loop
 function animate(time1: number) {
     var time: number = time1 - time0
-
-
 
     if (context) {
         // Clear
@@ -56,19 +67,16 @@ function animate(time1: number) {
         // Strokes
         for (var x: number = 0; x < canvas.width; x++) {
             var pov: number = 2 * x / canvas.width - 1
-            var rayOrientation: Vector = new Vector(orientation.x + plane.x * pov, orientation.y + plane.y * pov)
+            rayOrientation.mutate(orientation.x + plane.x * pov, orientation.y + plane.y * pov)
 
-            var gridPosition: Vector = new Vector(Math.floor(position.x), Math.floor(position.y))
+            gridPosition.mutate(Math.floor(position.x), Math.floor(position.y))
 
-            var sideDist: Vector = new Vector()
-            var delDist: Vector = new Vector(
+            delDist.mutate(
                 (rayOrientation.x == 0) ? 1e30 : Math.abs(1 / rayOrientation.x),
                 (rayOrientation.y == 0) ? 1e30 : Math.abs(1 / rayOrientation.y)
             )
+
             var perp: number = 0
-
-            var step: Vector = new Vector()
-
             var hit: boolean = false
             var side: number = 0
 
@@ -128,16 +136,14 @@ function animate(time1: number) {
             if (renderEnd >= canvas.height) {
                 renderEnd = canvas.height - 1
             }
-
-            var style = {
-                r: 0,
-                g: 0,
-                b: 0
-            }
+            
+            style.r = 0
+            style.g = 0
+            style.b = 0
 
             switch (grid[gridPosition.y][gridPosition.x]) {
                 case 1:
-                    style.r = 255
+                    style.r = 255 * 0.75
                     break
                 case 2:
                     style.g = 255
@@ -169,6 +175,9 @@ function animate(time1: number) {
         var playerSpeed = time * speed
         var playerOrientationSpeed = time * orientationSpeed
 
+        var orientationSpeedCos: number = Math.cos(playerOrientationSpeed)
+        var orientationSpeedSin: number = Math.sin(playerOrientationSpeed)
+
         if (W) {
             if (grid[Math.floor(position.y)][Math.floor(position.x + orientation.x * 0.3)] == 0) {
                 position.x += orientation.x * playerSpeed
@@ -190,27 +199,27 @@ function animate(time1: number) {
         }
 
         if (A) {
-            var orientation0: Vector = orientation.clone()
+            initialX = orientation.x
 
-            orientation.x = orientation.x * Math.cos(playerOrientationSpeed) - orientation.y * Math.sin(playerOrientationSpeed)
-            orientation.y = orientation0.x * Math.sin(playerOrientationSpeed) + orientation.y * Math.cos(playerOrientationSpeed)
+            orientation.x = orientation.x * orientationSpeedCos - orientation.y * orientationSpeedSin
+            orientation.y = initialX * orientationSpeedSin + orientation.y * orientationSpeedCos
 
-            var plane0: Vector = plane.clone()
+            initialX = plane.x
 
-            plane.x = plane.x * Math.cos(playerOrientationSpeed) - plane.y * Math.sin(playerOrientationSpeed)
-            plane.y = plane0.x * Math.sin(playerOrientationSpeed) + plane.y * Math.cos(playerOrientationSpeed)
+            plane.x = plane.x * orientationSpeedCos - plane.y * orientationSpeedSin
+            plane.y = initialX * orientationSpeedSin + plane.y * orientationSpeedCos
         }
 
         if (D) {
-            var orientation0: Vector = orientation.clone()
+            initialX = orientation.x
 
-            orientation.x = orientation.x * Math.cos(-playerOrientationSpeed) - orientation.y * Math.sin(-playerOrientationSpeed)
-            orientation.y = orientation0.x * Math.sin(-playerOrientationSpeed) + orientation.y * Math.cos(-playerOrientationSpeed)
+            orientation.x = orientation.x * orientationSpeedCos + orientation.y * orientationSpeedSin
+            orientation.y = initialX * -orientationSpeedSin + orientation.y * orientationSpeedCos
 
-            var plane0: Vector = plane.clone()
+            initialX = plane.x
 
-            plane.x = plane.x * Math.cos(-playerOrientationSpeed) - plane.y * Math.sin(-playerOrientationSpeed)
-            plane.y = plane0.x * Math.sin(-playerOrientationSpeed) + plane.y * Math.cos(-playerOrientationSpeed)
+            plane.x = plane.x * orientationSpeedCos + plane.y * orientationSpeedSin
+            plane.y = initialX * -orientationSpeedSin + plane.y * orientationSpeedCos
         }
     }
 
