@@ -1,4 +1,4 @@
-# Raycasting engine
+# Raycasting Engine
 Pseudo 3D engine developed in **Typescript** using the Digital Differential Analysis (DDA).
 
 ![Gameplay Demo](media/gameplay.gif)
